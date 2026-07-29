@@ -1940,7 +1940,7 @@ footer {
   overflow: hidden;
 }
 
-.comite-particles {
+.bg-particles {
   position: absolute;
   inset: 0;
   z-index: -1;

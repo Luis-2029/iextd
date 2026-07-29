@@ -95,18 +95,18 @@ updateHeroDim();
   }
 }());
 
-// COMITÉ — red de partículas animada de fondo
+// REGISTRO — red de partículas animada de fondo
 (function () {
-  const canvas = document.getElementById('comiteParticles');
-  const section = document.getElementById('comite');
+  const canvas = document.getElementById('registroParticles');
+  const section = document.getElementById('registro');
   if (!canvas || !section) return;
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReducedMotion) return;
 
   const ctx = canvas.getContext('2d');
-  const DOT_COLOR  = '45, 58, 107';   // var(--navy-text)
-  const LINE_COLOR = '45, 58, 107';
+  const DOT_COLOR  = '255, 255, 255';  // fondo oscuro de section-premios, puntos claros
+  const LINE_COLOR = '255, 255, 255';
   const LINK_DIST  = 140;
 
   let particles = [];
