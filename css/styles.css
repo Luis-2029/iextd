@@ -181,6 +181,32 @@ img { max-width: 100%; display: block; }
   color: var(--navy-text);
 }
 
+.nav-riu-chip {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.nav-riu-img {
+  height: 24px;
+  width: auto;
+  display: block;
+}
+
+.nav-logos-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,.4);
+  flex-shrink: 0;
+}
+
+#navbar.scrolled .nav-logos-divider {
+  background: rgba(45,58,107,.25);
+}
+
 .brand-abbr {
   font-family: var(--font-head);
   font-weight: 900;
