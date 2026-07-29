@@ -1,6 +1,12 @@
 const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyy4E3bKfZrNAy8KU4liwpkRvzpX3H7JvXaqDnArNGjr2a-3WZhWIfvtSJyNUP6djuN/exec';
 const TOKEN = 'k5o1u0m3wEuUsulc49zD3dr1fxhlSITr';
 
+// La librería de confeti usa un Web Worker por defecto; la CSP del sitio no
+// permite workers desde blob:, así que se crea una instancia propia sin worker.
+const fireConfetti = (typeof confetti === 'function' && confetti.create)
+  ? confetti.create(null, { resize: true, useWorker: false })
+  : null;
+
 const LADAS = {
   'México':          '+52',
   'Argentina':       '+54',
@@ -197,6 +203,9 @@ const LADAS = {
 
     marcarRegistradoG(correo, celular);
     showGMsg('¡Registro exitoso! Nos pondremos en contacto contigo pronto.', 'success');
+    if (fireConfetti) {
+      fireConfetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
     formGeneral.reset();
     gAlergiaDetalleWrap.hidden = true;
     gAlergiaDetalle.required   = false;

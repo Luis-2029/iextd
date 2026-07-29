@@ -46,9 +46,164 @@ window.addEventListener('load', () => {
   animateHeroLetters();
 });
 
+// HERO STICKY REVEAL — oscurece el hero conforme la siguiente sección lo cubre
+const heroEl = document.getElementById('hero');
+const heroScrollDim = document.getElementById('heroScrollDim');
+
+function updateHeroDim() {
+  const heroHeight = heroEl.offsetHeight || 1;
+  const progress = Math.min(Math.max(window.scrollY / heroHeight, 0), 1);
+  heroScrollDim.style.opacity = (progress * 0.6).toFixed(3);
+}
+
+window.addEventListener('scroll', updateHeroDim, { passive: true });
+updateHeroDim();
+
+// COMITÉ STICKY REVEAL — Registro se desliza encima; alto dinámico porque
+// Comité no tiene una altura fija como el hero (depende de su contenido).
+(function () {
+  const wrap = document.querySelector('.comite-pin-wrap');
+  const comiteEl = document.getElementById('comite');
+  const registroEl = document.getElementById('registro');
+  if (!wrap || !comiteEl || !registroEl) return;
+
+  function syncComiteReveal() {
+    const h = comiteEl.offsetHeight;
+    const fits = h <= window.innerHeight;
+
+    // Si Comité es más alto que la pantalla, "pegarlo" dejaría sus tarjetas
+    // de abajo tapadas para siempre (Registro las cubriría antes de que se
+    // pudieran ver). En ese caso se desactiva el pin y todo fluye normal.
+    if (fits) {
+      comiteEl.style.position = '';
+      wrap.style.height = (h * 2) + 'px';
+      registroEl.style.marginTop = -h + 'px';
+    } else {
+      // 'relative' (no 'static') para que el canvas de partículas, que se
+      // posiciona absolute respecto a #comite, no se rompa.
+      comiteEl.style.position = 'relative';
+      wrap.style.height = 'auto';
+      registroEl.style.marginTop = '';
+    }
+  }
+
+  syncComiteReveal();
+  window.addEventListener('resize', syncComiteReveal);
+  window.addEventListener('load', syncComiteReveal);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(syncComiteReveal);
+  }
+}());
+
+// COMITÉ — red de partículas animada de fondo
+(function () {
+  const canvas = document.getElementById('comiteParticles');
+  const section = document.getElementById('comite');
+  if (!canvas || !section) return;
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReducedMotion) return;
+
+  const ctx = canvas.getContext('2d');
+  const DOT_COLOR  = '45, 58, 107';   // var(--navy-text)
+  const LINE_COLOR = '45, 58, 107';
+  const LINK_DIST  = 140;
+
+  let particles = [];
+  let width = 0, height = 0, dpr = 1;
+  let running = false;
+  let rafId;
+
+  function resize() {
+    const rect = section.getBoundingClientRect();
+    width  = rect.width;
+    height = rect.height;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width  = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const density = 9000;
+    const count = Math.min(70, Math.max(20, Math.round((width * height) / density)));
+    particles = Array.from({ length: count }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.6 + 1,
+    }));
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, width, height);
+
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > width)  p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${DOT_COLOR}, .45)`;
+      ctx.fill();
+    });
+
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < LINK_DIST) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(${LINE_COLOR}, ${(1 - dist / LINK_DIST) * .22})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+
+    if (running) rafId = requestAnimationFrame(tick);
+  }
+
+  function start() {
+    if (running) return;
+    running = true;
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function stop() {
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => { entry.isIntersecting ? start() : stop(); });
+  }, { threshold: 0.01 });
+  observer.observe(section);
+}());
+
 const navbar = document.getElementById('navbar');
+const navInner = navbar.querySelector('.nav-inner');
+let navWasScrolled = window.scrollY > 60;
+
 window.addEventListener('scroll', () => {
-  navbar.classList.toggle('scrolled', window.scrollY > 60);
+  const isScrolled = window.scrollY > 60;
+  navbar.classList.toggle('scrolled', isScrolled);
+
+  if (isScrolled !== navWasScrolled) {
+    navInner.classList.remove('navbar-pop');
+    void navInner.offsetWidth;
+    navInner.classList.add('navbar-pop');
+    navWasScrolled = isScrolled;
+  }
 }, { passive: true });
 
 const hamburger = document.getElementById('hamburger');
@@ -222,6 +377,17 @@ document.querySelectorAll('.stat-card').forEach(el => {
   const sptTag    = document.getElementById('sptTag');
   let hideTimer;
 
+  function hideTooltipNow() {
+    clearTimeout(hideTimer);
+    spTooltip.classList.remove('visible');
+    spTooltip.setAttribute('aria-hidden', 'true');
+  }
+
+  // El tooltip es position:fixed; si la página hace scroll (p. ej. al agotar
+  // el scroll interno de la bio) el cursor nunca dispara mouseleave, así que
+  // se cierra de inmediato en cuanto se detecta scroll de la página.
+  window.addEventListener('scroll', hideTooltipNow, { passive: true });
+
   function positionTooltip(e) {
     const gap = 18;
     const w = spTooltip.offsetWidth  || 360;
@@ -263,19 +429,13 @@ document.querySelectorAll('.stat-card').forEach(el => {
     });
 
     card.addEventListener('mouseleave', () => {
-      hideTimer = setTimeout(() => {
-        spTooltip.classList.remove('visible');
-        spTooltip.setAttribute('aria-hidden', 'true');
-      }, 200);
+      hideTimer = setTimeout(hideTooltipNow, 200);
     });
   });
 
   spTooltip.addEventListener('mouseenter', () => clearTimeout(hideTimer));
   spTooltip.addEventListener('mouseleave', () => {
-    hideTimer = setTimeout(() => {
-      spTooltip.classList.remove('visible');
-      spTooltip.setAttribute('aria-hidden', 'true');
-    }, 200);
+    hideTimer = setTimeout(hideTooltipNow, 200);
   });
 }());
 
@@ -561,4 +721,88 @@ document.querySelectorAll('.stat-card').forEach(el => {
       if (!wasOpen) spot.classList.add('is-open');
     });
   });
+}());
+
+// COUNTDOWN AL EVENTO
+(function initCountdown() {
+  const wrap = document.getElementById('heroCountdown');
+  if (!wrap) return;
+
+  const targetTime  = new Date('2026-09-28T08:00:00-06:00').getTime();
+  const elDays      = document.getElementById('cdDays');
+  const elHours     = document.getElementById('cdHours');
+  const elMinutes   = document.getElementById('cdMinutes');
+  const elSeconds   = document.getElementById('cdSeconds');
+  const elLabel     = wrap.querySelector('.countdown-label');
+  const elGrid      = wrap.querySelector('.countdown-grid');
+
+  const pad = n => String(n).padStart(2, '0');
+  const daysBox    = elDays.parentElement;
+  const hoursBox   = elHours.parentElement;
+  const minutesBox = elMinutes.parentElement;
+  const secondsBox = elSeconds.parentElement;
+
+  const SHARD_DIRS = [
+    { cls: 'shard-tl', tx: '-16px', ty: '-24px', rot: '-25deg' },
+    { cls: 'shard-tr', tx: '16px',  ty: '-24px', rot: '25deg' },
+    { cls: 'shard-r',  tx: '26px',  ty: '2px',   rot: '20deg' },
+    { cls: 'shard-br', tx: '16px',  ty: '26px',  rot: '25deg' },
+    { cls: 'shard-bl', tx: '-16px', ty: '26px',  rot: '-25deg' },
+    { cls: 'shard-l',  tx: '-26px', ty: '2px',   rot: '-20deg' },
+  ];
+
+  function shatterDigit(box, valueEl, newText) {
+    const oldText = valueEl.textContent;
+
+    SHARD_DIRS.forEach((d, i) => {
+      const shard = document.createElement('span');
+      shard.className = `countdown-num countdown-shard ${d.cls}`;
+      shard.textContent = oldText;
+      shard.style.setProperty('--tx', d.tx);
+      shard.style.setProperty('--ty', d.ty);
+      shard.style.setProperty('--rot', d.rot);
+      shard.style.animationDelay = (i * 12) + 'ms';
+      shard.addEventListener('animationend', () => shard.remove());
+      box.appendChild(shard);
+    });
+
+    valueEl.textContent = newText;
+    valueEl.classList.remove('enter');
+    void valueEl.offsetWidth;
+    valueEl.classList.add('enter');
+  }
+
+  let timer;
+
+  function tick() {
+    const diff = targetTime - Date.now();
+
+    if (diff <= 0) {
+      elLabel.textContent = '¡El evento ha comenzado!';
+      elGrid.style.display = 'none';
+      clearInterval(timer);
+      return;
+    }
+
+    const days    = pad(Math.floor(diff / 86400000));
+    const hours   = pad(Math.floor((diff % 86400000) / 3600000));
+    const minutes = pad(Math.floor((diff % 3600000) / 60000));
+    const secs    = pad(Math.floor((diff % 60000) / 1000));
+
+    if (elDays.textContent !== days) {
+      shatterDigit(daysBox, elDays, days);
+    }
+    if (elHours.textContent !== hours) {
+      shatterDigit(hoursBox, elHours, hours);
+    }
+    if (elMinutes.textContent !== minutes) {
+      shatterDigit(minutesBox, elMinutes, minutes);
+    }
+    if (elSeconds.textContent !== secs) {
+      shatterDigit(secondsBox, elSeconds, secs);
+    }
+  }
+
+  tick();
+  timer = setInterval(tick, 1000);
 }());
