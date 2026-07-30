@@ -529,6 +529,27 @@ document.querySelectorAll('.stat-card').forEach(el => {
   goTo(0);
 }());
 
+/* Revelado galería: texto entra desde la izquierda, imágenes desde la derecha */
+(function () {
+  const intro  = document.querySelector('.galeria-intro');
+  const bubble = document.querySelector('.galeria-bubble');
+  const targets = [intro, bubble].filter(Boolean);
+  if (!targets.length) return;
+
+  if (!('IntersectionObserver' in window)) {
+    targets.forEach(el => el.classList.add('in-view'));
+    return;
+  }
+
+  const galeriaObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      entry.target.classList.toggle('in-view', entry.isIntersecting);
+    });
+  }, { threshold: 0.25, rootMargin: '0px 0px -60px 0px' });
+
+  targets.forEach(el => galeriaObserver.observe(el));
+}());
+
 /* Galería burbuja */
 (function () {
   const bg = document.getElementById('bubbleBg');

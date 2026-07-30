@@ -2824,11 +2824,30 @@ footer {
 }
 
 /* GALERÍA BURBUJA */
+.galeria-intro {
+  opacity: 0;
+  transform: translateX(-60px);
+  transition: opacity .8s ease, transform .8s ease;
+}
+
+.galeria-intro.in-view {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 .galeria-bubble {
   position: relative;
   height: 480px;
   border-radius: 18px;
   overflow: hidden;
+  opacity: 0;
+  transform: translateX(60px);
+  transition: opacity .8s ease, transform .8s ease;
+}
+
+.galeria-bubble.in-view {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .bubble-bg {
